@@ -14,6 +14,10 @@ def test_url_with_custom_dns(url, dns_server, results):
     def resolve_dns_with_custom_server(hostname, dns_server):
         resolver = dns.resolver.Resolver()
         resolver.nameservers = [dns_server, dns_server]
+        if "://" in hostname:
+            hostname = hostname.split("://")[1]
+        if '/' in hostname:
+            hostname = hostname.split('/')[0]
         try:
             answer = resolver.resolve(hostname)
             return answer[0].address

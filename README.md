@@ -1,16 +1,31 @@
 # Best 403 Unlocker (Python Version)
 
-A Python CLI tool that helps you find the fastest DNS SNI proxy server for your internet service provider. This tool automatically tests multiple DNS servers and configures your system to use the fastest ones.
+## Key Differences and Features of the Python Version
 
-## Features
+The Python version of the 403 unlocker tool, available in [here](https://github.com/403unlocker/best403unlocker-py), has several key features:
+
+### Python-based Implementation
+
+Built using Python's robust networking libraries and tools, providing excellent DNS handling capabilities and cross-platform support.
+
+### Cross-platform Support
+
+Thanks to Python's portability, this project supports:
+
+- **Windows** (manual DNS configuration required)
+- **Linux** (automatic configuration)
+- **macOS** (automatic configuration)
+
+### Features
 
 - Automated DNS speed testing
-- Cross-platform support (Windows, macOS, Linux)
-- Easy-to-use command line interface 
-- Detailed performance metrics for each DNS server
-- Config file support for custom DNS servers
-- Progress bar visualization during testing
-- Supports both interactive and command-line modes
+- Progress bar visualization
+- Config file support
+- Both CLI and interactive modes
+
+## How to Run the Python Version
+
+### Method 1 - Using pip (recommended)
 
 ## Prerequisites
 
@@ -21,10 +36,12 @@ A Python CLI tool that helps you find the fastest DNS SNI proxy server for your 
 ## Installation
 
 1. Clone the repository:
+
 ```bash
 git clone https://github.com/403unlocker/best403unlocker-py.git
 cd best403unlocker-py
 ```
+
 2. Install dependencies using Poetry:
 
 ```bash
@@ -44,4 +61,58 @@ This will:
 
 Command Line Options
 
-1. Test DNS servers without applying:
+1. Test DNS servers with applying:
+
+    ```bash
+    unlock403 [--url URL]
+    ```
+
+2. Test DNS servers without applying:
+
+    ```bash
+    unlock403 search-dns [--url URL]
+    ```
+
+3. Set custom DNS servers:
+
+   ```bash
+   unlock403 set-custom-dns 8.8.8.8 8.8.4.4
+   ```
+
+Examples
+Find fastest DNS for a specific domain:
+
+1. Default mode (interactive):
+
+```bash
+unlock403
+```
+
+2. Test specific URL:
+
+```bash
+unlock403 --url developers.google.com
+```
+
+3. search url for dns:
+
+```bash
+unlock403 search-dns
+```
+4. 
+```bash
+unlock403 search-dns --url developers.google.com
+```
+
+## Credit
+
+Original concept by Arman Taheri
+
+## Contact
+
+Feel free to open issues and PRs on GitHub.
+
+[@msnp1381](https://github.com/msnp1381)
+OR
+[Email Me](mailto:mohamadnematpoor@gmail.com)
+

@@ -1,4 +1,3 @@
-
 import time
 import unittest
 
@@ -11,5 +10,6 @@ class TestTQDM(unittest.TestCase):
             time.sleep(0.01)
         self.assertTrue(True)
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     unittest.main()

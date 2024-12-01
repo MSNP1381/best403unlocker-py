@@ -1,0 +1,6 @@
+
+[[tool.poetry.source]]
+name = "testpypi"
+url = "https://test.pypi.org/legacy/"
+default = false
+secondary = true

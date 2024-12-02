@@ -1,12 +1,12 @@
 [tool.poetry]
 name = "best403unlocker_py"
-version = "0.1.6"
+version = "0.0.1"
 description = "python lib of best403unlocker"
 authors = ["Muhammad sadegh nemat pour <mohamadnematpoor@gmail.com>"]
 readme = "README.md"
 license = "MIT"
-homepage = "https://github.com/msnemp/best403unlocker-py"
-repository = "https://github.com/msnemp/best403unlocker-py"
+homepage = "https://github.com/msnp1381/best403unlocker-py"
+repository = "https://github.com/msnp1381/best403unlocker-py"
 keywords = ["security", "403", "bypass", "web", "penetration-testing"]
 classifiers = [
     "Development Status :: 4 - Beta",

@@ -112,10 +112,6 @@ unlock403 search-dns
 unlock403 search-dns --url developers.google.com
 ```
 
-## Credit
-
-Original concept by [Arman Taheri](https://github.com/ArmanTaheriGhaleTaki)
-
 ## Contact
 
 Feel free to open issues and PRs on GitHub.

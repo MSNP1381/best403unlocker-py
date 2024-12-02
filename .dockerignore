@@ -1,5 +1,0 @@
-*.md
-.dockerignore 
-.github/*
-.git
-LICENSE

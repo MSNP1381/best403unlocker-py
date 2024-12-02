@@ -8,6 +8,7 @@ import requests
 from tqdm import tqdm
 import shutil
 import ipaddress
+import os
 
 
 def test_url_with_custom_dns(url, dns_server, results):
@@ -16,8 +17,8 @@ def test_url_with_custom_dns(url, dns_server, results):
         resolver.nameservers = [dns_server, dns_server]
         if "://" in hostname:
             hostname = hostname.split("://")[1]
-        if '/' in hostname:
-            hostname = hostname.split('/')[0]
+        if "/" in hostname:
+            hostname = hostname.split("/")[0]
         try:
             answer = resolver.resolve(hostname)
             return answer[0].address
@@ -29,8 +30,17 @@ def test_url_with_custom_dns(url, dns_server, results):
     ip_address = resolve_dns_with_custom_server(url, dns_server)
     if ip_address:
         try:
-            # headers = {"Host": url}
-            response = requests.get(f"http://{ip_address}", timeout=2, proxies={})
+            headers = {
+                "Host": url,
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3",
+                "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+                "Accept-Language": "en-US,en;q=0.5",
+            }
+
+            proxies = {"http": None, "https": None, "ftp": None}
+            response = requests.get(
+                f"http://{ip_address}", timeout=2, proxies=proxies, headers=headers
+            )
             tqdm.write(f"Status Code: {response.status_code}")
             if response.status_code >= 200 and response.status_code < 300:
                 results[dns_server] = response.elapsed.total_seconds()
@@ -45,17 +55,30 @@ def test_url_with_custom_dns(url, dns_server, results):
 
 
 def read_config():
+    config_path = os.path.expanduser("~/.unlock403/best403unlocker.conf")
+    config_dir = os.path.dirname(config_path)
+    if not os.path.exists(config_dir):
+        os.makedirs(config_dir)
+    if not os.path.exists(config_path):
+        response = requests.get(
+            "https://raw.githubusercontent.com/MSNP1381/best403unlocker-py/refs/heads/main/best403unlocker.conf"
+        )
+        with open(config_path, "w") as configfile:
+            configfile.write(response.text)
     config = configparser.ConfigParser()
-    config.read("best403unlocker.conf")
-    config.items()
+    config.read(config_path)
     dns_servers = config.get("dns", "dns").replace('"', "").split()
     return dns_servers
 
 
 def write_dns_config(dns_servers):
+    config_path = os.path.expanduser("~/.unlock403/best403unlocker.conf")
+    config_dir = os.path.dirname(config_path)
+    if not os.path.exists(config_dir):
+        os.makedirs(config_dir)
     config = configparser.ConfigParser()
     config["dns"] = {"dns": " ".join(dns_servers)}
-    with open("best403unlocker.conf", "w") as configfile:
+    with open(config_path, "w") as configfile:
         config.write(configfile)
 
 
@@ -112,13 +135,14 @@ jgs   '-..-'|_.-''-._|"""
     print("Windows detected")
     print("windows doesn't support changing DNS servers, change it manually")
     print()
-    print(padding)
-    print(dns_servers[0])
+    if len(dns_servers) >= 1:
+        print(padding)
+        print(dns_servers[0])
     if len(dns_servers) > 1:
         print(dns_servers[1])
-    print()
+        print()
 
-    print(padding)
+        print(padding)
     print()
 
 

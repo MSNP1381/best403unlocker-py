@@ -27,13 +27,19 @@ Thanks to Python's portability, this project supports:
 
 ### Method 1 - Using pip (recommended)
 
-## Prerequisites
+```bash
+pip install best403unlocker_py
+```
 
-- Python 3.12 or higher
+### Method 2 - Using poetry (**NOT** recommended)
+
+### Prerequisites
+
+- Python 3.8 or higher
 - Poetry package manager
 - Administrative/root privileges (required for DNS configuration)
 
-## Installation
+### Installation
 
 1. Clone the repository:
 
@@ -82,31 +88,33 @@ Command Line Options
 Examples
 Find fastest DNS for a specific domain:
 
-1. Default mode (interactive):
+1. Default mode searche and set:
 
 ```bash
 unlock403
 ```
 
-2. Test specific URL:
+2. Default mode searche and set with specific URL:
 
 ```bash
 unlock403 --url developers.google.com
 ```
 
-3. search url for dns:
+3. search with default url for dns:
 
 ```bash
 unlock403 search-dns
 ```
-4. 
+
+4. search with custom url url for dns
+
 ```bash
 unlock403 search-dns --url developers.google.com
 ```
 
 ## Credit
 
-Original concept by Arman Taheri
+Original concept by [Arman Taheri](https://github.com/ArmanTaheriGhaleTaki)
 
 ## Contact
 
@@ -115,4 +123,3 @@ Feel free to open issues and PRs on GitHub.
 [@msnp1381](https://github.com/msnp1381)
 OR
 [Email Me](mailto:mohamadnematpoor@gmail.com)
-

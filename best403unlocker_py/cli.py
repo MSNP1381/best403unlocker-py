@@ -22,16 +22,17 @@ def search_dns(url):
     results = scan_dns_servers(url, dns_servers)
     sorted_dns_servers = sort_dict(results)
     write_dns_config(sorted_dns_servers)
-    for dns, time in results.items():
-        print(f"{dns}: {time} seconds")
+    for dns, time in sorted(results.items(),key=lambda x:x[1]):
+        print(f"{dns}: {-1 if time==1000 else round(time,2)} seconds")
     # set_dns(dns_servers)
     os_type = platform.system().lower()
-
+    results = {dns: time for dns, time in results.items() if time < 1000}
+    dns_servers_filtered=sort_dict(results)
     if os_type == "windows":
-        return sorted_dns_servers
+        return dns_servers_filtered
 
     print("DNS servers have been searched and set successfully.")
-    return sorted_dns_servers
+    return dns_servers_filtered
 
 
 @click.command()

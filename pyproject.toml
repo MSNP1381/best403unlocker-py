@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "best403unlocker_py"
-version = "0.1.0"
+version = "0.1.6"
 description = "python lib of best403unlocker"
 authors = ["Muhammad sadegh nemat pour <mohamadnematpoor@gmail.com>"]
 readme = "README.md"
@@ -21,11 +21,15 @@ classifiers = [
     "Topic :: Security",
     "Topic :: Software Development :: Libraries :: Python Modules"
 ]
-packages = [{include = "best403unlocker_py"}]
+packages = [
+    {include = "best403unlocker_py", from = "."}
+]
 include = [
     "LICENSE",
     "README.md",
+    "*.conf",
     "best403unlocker_py/**/*.py",
+    "best403unlocker_py/**/*.conf",
     "best403unlocker_py/py.typed"
 ]
 exclude = [

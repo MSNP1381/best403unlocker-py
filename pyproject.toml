@@ -47,11 +47,11 @@ dnspython = "^2.7.0"
 requests = "^2.32.3"
 tqdm = "^4.67.1"
 click = "^8.1.7"
-pytest = "^8.3.3"
 typing-extensions = "^4.9.0"
+rich = "^13.9.4"
 
 [tool.poetry.group.dev.dependencies]
-requests = "^2.32.3"
+pytest = "^8.3.3"
 mypy = "^1.8.0"
 black = "^24.2.0"
 isort = "^5.13.2"

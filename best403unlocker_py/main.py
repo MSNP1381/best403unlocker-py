@@ -1,32 +1,41 @@
 import configparser
 import platform
 import subprocess
+import sys
 from typing import List
-
+from urllib.parse import urlparse
 import dns.resolver
 import requests
-from tqdm import tqdm
+from rich.progress import Progress
 import shutil
 import ipaddress
 import os
+import logging
+import ctypes
+from rich.prompt import Prompt
+from rich.table import Table
 
 
-def test_url_with_custom_dns(url, dns_server, results):
+logger =logging.getLogger(__name__)
+# logger.addHandler(handler)
+# Configure logging
+
+
+def test_url_with_custom_dns(url, dns_server, results,progress:Progress):
     def resolve_dns_with_custom_server(hostname, dns_server):
         resolver = dns.resolver.Resolver()
         resolver.nameservers = [dns_server, dns_server]
-        if "://" in hostname:
-            hostname = hostname.split("://")[1]
-        if "/" in hostname:
-            hostname = hostname.split("/")[0]
+        parsed_url = urlparse(url)
+        hostname = parsed_url.netloc
         try:
             answer = resolver.resolve(hostname)
+            logger.info(f"Resolved {hostname} to {answer[0].address} with {dns_server}")
             return answer[0].address
-        except Exception as e:
-            tqdm.write(f"DNS resolution error with {dns_server}: {e}")
+        except Exception:
+            logger.warning(f"DNS resolution error with {dns_server}")
             return None
 
-    tqdm.write(f"Testing with DNS server: {dns_server}")
+    progress.console.print(f"Testing with DNS server: {dns_server}")
     ip_address = resolve_dns_with_custom_server(url, dns_server)
     if ip_address:
         try:
@@ -41,17 +50,19 @@ def test_url_with_custom_dns(url, dns_server, results):
             response = requests.get(
                 f"http://{ip_address}", timeout=2, proxies=proxies, headers=headers
             )
-            tqdm.write(f"Status Code: {response.status_code}")
+            progress.console.print(f"Status Code: {response.status_code}")
             if response.status_code >= 200 and response.status_code < 300:
+                logger.info(f"HTTP request successful with {dns_server}")
                 results[dns_server] = response.elapsed.total_seconds()
-                tqdm.write(
+                progress.console.print(
                     f"*****\n\n\t\t OK {round(response.elapsed.total_seconds(),2)}\n\n*****"
                 )
-            # print(f"Response: {response.text}")
+            else:
+                logger.warning("HTTP request failed. Status code: {response.status_code}")
         except requests.RequestException as e:
-            tqdm.write(f"HTTP request error: {e}")
+            logger.warning(f"HTTP request error: {e}")
     else:
-        tqdm.write("Failed to resolve DNS.")
+        logger.warning("Failed to resolve DNS.")
 
 
 def read_config():
@@ -87,7 +98,7 @@ def sort_dict(results: dict):
     return [i[0] for i in values]
 
 
-def set_dns(dns_servers: List[str]):
+def set_dns(dns_servers: List[str],progress:Progress):
     os_type = platform.system().lower()
 
     def validate_dns_servers(dns_servers):
@@ -97,30 +108,22 @@ def set_dns(dns_servers: List[str]):
                 ipaddress.ip_address(i)
                 valid_dns_servers.append(i)
             except ValueError:
-                tqdm.write(f"Invalid DNS server IP: {i}")
+                logger.debug(f"Invalid DNS server IP: {i}")
                 exit()
         return valid_dns_servers
-
+    print(os_type)
     dns_servers = validate_dns_servers(dns_servers)
     if os_type == "windows":
-        set_dns_windows(dns_servers)
+        set_dns_windows(dns_servers,progress)
     elif os_type == "darwin":
         set_dns_mac(dns_servers)
     elif os_type == "linux":
         set_dns_linux(dns_servers)
     else:
-        print(f"Unsupported OS: {os_type}")
+        logger.debug(f"Unsupported OS: {os_type}")
 
 
-def set_dns_windows(dns_servers):
-    # ***The requested operation requires elevation (Run as administrator).***
-    # interface = "Ethernet"  # Change this to your network interface name if different
-    # command = f'netsh interface ip set dns name="{interface}" static {dns_servers[0]}'
-    # subprocess.run(command, shell=True)
-    # for dns in dns_servers[1:]:
-    #     command = f'netsh interface ip add dns name="{interface}" {dns} index=2'
-    #     subprocess.run(command, shell=True)
-    # Beautiful print with "*" padding and Windows logo in ASCII
+def set_dns_windows(dns_servers,progress:Progress):
     columns, _ = shutil.get_terminal_size()
     padding = "*" * columns
 
@@ -134,16 +137,62 @@ jgs   '-..-'|_.-''-._|"""
     print(windows_logo)
     print("Windows detected")
     print("windows doesn't support changing DNS servers, change it manually")
-    print()
+    print("")
     if len(dns_servers) >= 1:
         print(padding)
         print(dns_servers[0])
     if len(dns_servers) > 1:
         print(dns_servers[1])
-        print()
+        print("")
 
         print(padding)
-    print()
+    print("")
+    #list windows network interface names then select which interface intractivly using rich library
+    def list_windows_interfaces():
+        command = 'netsh interface show interface'
+        result = subprocess.run(command, shell=True, capture_output=True, text=True)
+        interfaces = []
+        if result.returncode == 0:
+            lines = result.stdout.splitlines()
+            for line in lines[3:]:
+                parts = line.split()
+                if len(parts) >= 4:
+                    interfaces.append(parts[-1])
+        return interfaces
+
+    interfaces = list_windows_interfaces()
+
+    if not interfaces:
+        logger.warning("No network interfaces found.")
+        return
+
+    table = Table(title="Network Interfaces")
+    table.add_column("Index", justify="right", style="cyan", no_wrap=True)
+    table.add_column("Interface Name", style="magenta")
+
+    for idx, interface in enumerate(interfaces):
+        table.add_row(str(idx), interface)
+
+    progress.console.print(table)
+
+    interface_index = Prompt.ask("Select the interface index", choices=[str(i) for i in range(len(interfaces))])
+    interface_name = interfaces[int(interface_index)]
+    progress.console.print(f"Selected interface: {interface_name}")
+    
+    primary_dns = dns_servers[0] if len(dns_servers) > 0 else None
+    secondary_dns = dns_servers[1] if len(dns_servers) > 1 else None
+
+    if primary_dns:
+        command = f'netsh interface ip set dns name="{interface_name}" source=static addr={primary_dns}'
+        subprocess.run(command, shell=True)
+        logger.info(f"Primary DNS set to {primary_dns}")
+
+        if secondary_dns:
+            command = f'netsh interface ip add dns name="{interface_name}" addr={secondary_dns} index=2'
+            subprocess.run(command, shell=True)
+            logger.info(f"Secondary DNS set to {secondary_dns}")
+    else:
+        logger.warning("Administrator privileges are required to change DNS settings on Windows.")
 
 
 def set_dns_mac(dns_servers):
@@ -154,26 +203,57 @@ def set_dns_mac(dns_servers):
 
 
 def set_dns_linux(dns_servers):
+    print("Linux detected")
     resolv_conf = "/etc/resolv.conf"
-    with open(resolv_conf, "w") as file:
-        for dns in dns_servers:
-            file.write(f"nameserver {dns}\n")
+    # select first two dns servers
+    dns_servers = dns_servers[:2]
+    command = f"echo '{chr(10).join([f'nameserver {dns}' for dns in dns_servers])}' | sudo tee {resolv_conf} > /dev/null"
+    subprocess.run(command, shell=True)
 
 
 def scan_dns_servers(url, dns_servers):
-    results = {i: 1000 for i in dns_servers}
-    for dns_server in tqdm(dns_servers, desc="Testing DNS servers"):
-        test_url_with_custom_dns(url, dns_server, results)
-    return results
+    with Progress() as progress:
+        
+        results = {i: 1000 for i in dns_servers}
+        for dns_server in progress.track(dns_servers, description="Testing DNS servers"):
+            test_url_with_custom_dns(url, dns_server, results,progress)
+        return results,progress
 
+def check_if_sudo_or_admin():
+    if os.name == 'nt':
+        try:
+            return ctypes.windll.shell32.IsUserAnAdmin()
+        except Exception:
+            return False
+    else:
+        return os.geteuid() == 0
+def change_permission_to_sudo_or_admin():
+    if os.name == 'nt':
+        # Windows-specific code to check for admin privileges
+        try:
+            is_admin = os.getuid() == 0
+        except AttributeError:
+            is_admin = ctypes.windll.shell32.IsUserAnAdmin() != 0
+    else:
+        # Unix-specific code to check for sudo privileges
+        is_admin = os.geteuid() == 0
+
+    if not is_admin:
+        if os.name == 'nt':
+            ctypes.windll.shell32.ShellExecuteW(None, "runas", sys.executable, " ".join(sys.argv), None, 1)
 
 def main():
-    url = "developers.google.com"
-    dns_servers = read_config()
-    results = scan_dns_servers(url, dns_servers)
-    sorted_dns_servers = sort_dict(results)
-    write_dns_config(sorted_dns_servers)
-    set_dns(sorted_dns_servers)
+    # url = "https://developers.google.com"
+    # dns_servers = read_config()
+    # results,_ = scan_dns_servers(url, dns_servers)
+    # sorted_dns_servers = sort_dict(results)
+    # write_dns_config(sorted_dns_servers)
+    # set_dns(sorted_dns_servers)
+    
+    change_permission_to_sudo_or_admin()
+    with Progress() as progress:
+        set_dns(['1.1.1.1'],progress)
+    # os_type = platform.system().lower()
 
 
 if __name__ == "__main__":

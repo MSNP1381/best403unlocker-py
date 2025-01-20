@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "best403unlocker_py"
-version = "0.0.1"
+version = "0.0.2"
 description = "python lib of best403unlocker"
 authors = ["Muhammad sadegh nemat pour <mohamadnematpoor@gmail.com>"]
 readme = "README.md"
@@ -45,7 +45,6 @@ exclude = [
 python = "^3.9"
 dnspython = "^2.7.0"
 requests = "^2.32.3"
-tqdm = "^4.67.1"
 click = "^8.1.7"
 typing-extensions = "^4.9.0"
 rich = "^13.9.4"
@@ -53,6 +52,7 @@ rich = "^13.9.4"
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.3.3"
 mypy = "^1.8.0"
+colorlog = "^6.9.0"
 black = "^24.2.0"
 isort = "^5.13.2"
 

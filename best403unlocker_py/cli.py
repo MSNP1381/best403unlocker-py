@@ -1,6 +1,6 @@
 import datetime
 import os
-import platform
+from rich.progress import Progress
 import click
 import logging
 
@@ -42,16 +42,15 @@ def search_dns(url):
     results,_ = scan_dns_servers(url, dns_servers)
     sorted_dns_servers = sort_dict(results)
     write_dns_config(sorted_dns_servers)
-    for dns, time in sorted(results.items(), key=lambda x: x[1]):
-        print(f"{dns}: {'didn\'t respond' if time == 1000 else round(time, 2)} seconds")
-    # set_dns(dns_servers)
-    os_type = platform.system().lower()
+    for dns_, time in sorted(results.items(), key=lambda x: x[1]):
+        if time==1000:
+            pass
+            # print(f"{dns_}: no response")
+        else:
+            print(f"{dns_}: {round(time, 2)} seconds")
     results = {dns: time for dns, time in results.items() if time < 1000}
     dns_servers_filtered = sort_dict(results)
-    if os_type == "windows":
-        return dns_servers_filtered
 
-    print("DNS servers have been searched and set successfully.")
     return dns_servers_filtered
 
 @click.command()
@@ -60,7 +59,8 @@ def set_custom_dns(dns_servers):
     if not dns_servers:
         logger.debug("Error: At least one DNS server must be provided.")
         return
-    set_dns(dns_servers)
+    with Progress() as progress:
+        set_dns(dns_servers,progress)
 
 @click.command()
 @click.option(
@@ -68,7 +68,8 @@ def set_custom_dns(dns_servers):
 )
 def default(url="developers.google.com"):
     sorted_dns_servers = search_dns.callback(url)
-    set_dns(sorted_dns_servers[:2])
+    with Progress() as progress:
+        set_dns(sorted_dns_servers[:2],progress)
     logger.info("DNS servers have been searched and set successfully.")
 
 cli.add_command(search_dns)

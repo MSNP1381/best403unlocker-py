@@ -24,9 +24,9 @@ logger =logging.getLogger(__name__)
 def test_url_with_custom_dns(url, dns_server, results,progress:Progress):
     def resolve_dns_with_custom_server(hostname, dns_server):
         resolver = dns.resolver.Resolver()
-        resolver.nameservers = [dns_server, dns_server]
-        parsed_url = urlparse(url)
-        hostname = parsed_url.netloc
+        resolver.nameservers = [dns_server]
+        # parsed_url = urlparse(url)
+        # hostname = parsed_url.hostname
         try:
             answer = resolver.resolve(hostname)
             logger.info(f"Resolved {hostname} to {answer[0].address} with {dns_server}")
@@ -40,7 +40,7 @@ def test_url_with_custom_dns(url, dns_server, results,progress:Progress):
     if ip_address:
         try:
             headers = {
-                "Host": url,
+                "Host": urlparse(url).hostname,
                 "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3",
                 "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
                 "Accept-Language": "en-US,en;q=0.5",
@@ -57,8 +57,8 @@ def test_url_with_custom_dns(url, dns_server, results,progress:Progress):
                 progress.console.print(
                     f"*****\n\n\t\t OK {round(response.elapsed.total_seconds(),2)}\n\n*****"
                 )
-            else:
-                logger.warning("HTTP request failed. Status code: {response.status_code}")
+            # else:
+            #     logger.warning(f"HTTP request failed. Status code: {response.status_code}")
         except requests.RequestException as e:
             logger.warning(f"HTTP request error: {e}")
     else:
@@ -111,7 +111,6 @@ def set_dns(dns_servers: List[str],progress:Progress):
                 logger.debug(f"Invalid DNS server IP: {i}")
                 exit()
         return valid_dns_servers
-    print(os_type)
     dns_servers = validate_dns_servers(dns_servers)
     if os_type == "windows":
         set_dns_windows(dns_servers,progress)
@@ -124,6 +123,8 @@ def set_dns(dns_servers: List[str],progress:Progress):
 
 
 def set_dns_windows(dns_servers,progress:Progress):
+    if not dns_servers:
+        return
     columns, _ = shutil.get_terminal_size()
     padding = "*" * columns
 
@@ -184,12 +185,12 @@ jgs   '-..-'|_.-''-._|"""
 
     if primary_dns:
         command = f'netsh interface ip set dns name="{interface_name}" source=static addr={primary_dns}'
-        subprocess.run(command, shell=True)
+        subprocess.run(["powershell", "-Command", f'Start-Process powershell -ArgumentList \'{command}\' -Verb RunAs'], shell=True)
         logger.info(f"Primary DNS set to {primary_dns}")
 
         if secondary_dns:
             command = f'netsh interface ip add dns name="{interface_name}" addr={secondary_dns} index=2'
-            subprocess.run(command, shell=True)
+            subprocess.run(["powershell", "-Command", f'Start-Process powershell -ArgumentList \'{command}\' -Verb RunAs'], shell=True)
             logger.info(f"Secondary DNS set to {secondary_dns}")
     else:
         logger.warning("Administrator privileges are required to change DNS settings on Windows.")
@@ -233,7 +234,7 @@ def change_permission_to_sudo_or_admin():
         try:
             is_admin = os.getuid() == 0
         except AttributeError:
-            is_admin = ctypes.windll.shell32.IsUserAnAdmin() != 0
+            is_admin = subprocess.run(["powershell", "-Command", "Test-ProcessAdminRights"], capture_output=True, text=True).stdout.strip() == "True"
     else:
         # Unix-specific code to check for sudo privileges
         is_admin = os.geteuid() == 0
@@ -243,16 +244,19 @@ def change_permission_to_sudo_or_admin():
             ctypes.windll.shell32.ShellExecuteW(None, "runas", sys.executable, " ".join(sys.argv), None, 1)
 
 def main():
-    # url = "https://developers.google.com"
-    # dns_servers = read_config()
-    # results,_ = scan_dns_servers(url, dns_servers)
+
+    # results,_=scan_dns_servers('https://developers.google.com',read_config())
     # sorted_dns_servers = sort_dict(results)
-    # write_dns_config(sorted_dns_servers)
-    # set_dns(sorted_dns_servers)
-    
-    change_permission_to_sudo_or_admin()
+    # final_result=[]
+    # for dns_, time in sorted(results.items(), key=lambda x: x[1]):
+    #     if time==1000:
+    #         pass
+    #         # print(f"{dns_}: no response")
+    #     else:
+    #         final_result.append(dns_)
+    #         print(f"{dns_}: {round(time, 2)} seconds")
     with Progress() as progress:
-        set_dns(['1.1.1.1'],progress)
+        set_dns(['87.107.153.60'],progress)
     # os_type = platform.system().lower()
 
 
